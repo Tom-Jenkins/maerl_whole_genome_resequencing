@@ -1,0 +1,24 @@
+65                                                  !Integer, NumIndiv, #Individuals
+10175                                               !Integer, NumLoci, #Loci
+1                                                   !Boolean, AllSNP, All loci are SNP (1/0=Y/N)
+-9                                                  !String, MisValue, Missing allele or PopData
+123                                                 !Integer, ISeed, Seed of random number
+"Lcorallioides_PopCluster_MedScaling_Min3.dat"      !String, DataName, Genotype file name
+"Lcorallioides_PopCluster_MedScaling_Min3"          !String, OutFile, Output file name
+2                                                   !Integer, Scaling, 0/1/2/3/4=No/Weak/Medium/Strong/VeryStrong scaling
+2                                                   !Integer, K_Low, Minimum K value
+10                                                  !Integer, K_High, Maximum K value
+10                                                  !Integer, NumRun, #Replicate Runs per K Value
+0                                                   !Integer, Search by 0/1=Assign_Prob/Relatedness
+0                                                   !Boolean, OutAlleleFre, to output allele frequency (1/0=Y/N)
+0                                                   !Boolean, PopDataQ, PopData available (1/0=Y/N)
+0                                                   !Boolean, PopFlagQ, PopFlag available (1/0=Y/N)
+2                                                   !Integer, Model, 1/2/3/4=Mixture/Admixture/Hybridization/Migration
+0                                                   !Boolean, LocusFst, to estimate locus-specific F-Statistics (1/0=Y/N)
+0                                                   !Boolean, UseKMeans, to Use K-Means clustering Method (1/0=Y/N)
+0                                                   !Boolean, IndivLocQ, Individual location data available (1/0=Y/N)
+0                                                   !Boolean, DataForm, 0/1/2/3/4/5=Indiv data in 1-row/2-rows/1-column/Bytes/.Ped/.Bed
+0                                                   !Boolean, LocusAdmixQ, to compute individual-locus admixture (1/0=Y/N)
+1                                                   !Integer, 0/1/2: Compute relatedness = No/Wang/LynchRitland
+0                                                   !Boolean, KinshipQ, to infer kinship (1/0=Y/N)
+1                                                   !Integer, 0/1/2=Undefined/equal/unequal prior allele freq
