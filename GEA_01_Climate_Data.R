@@ -1,6 +1,6 @@
 # =========================== #
 #
-# Maerl Whole Genome Resequencing Project 2024
+# Maerl Whole Genome Re-sequencing Project 2024
 #
 # Extract Climate Data for GEA Analysis
 #
@@ -38,7 +38,7 @@ netcdf2tifcrop <- function(netcdf, outpath) {
 # Cloud cover: 2000-2010; surface; variable mean  
 
 # Read in all tif files as rasters
-tifs <- list.files(path = "./data", pattern = "\\.tif$", full.names = TRUE)
+tifs <- list.files(path = "data/environmental_data/", pattern = "\\.tif$", full.names = TRUE)
 rasters <- lapply(tifs, terra::rast)
 
 # Rename raster list elements
@@ -60,7 +60,7 @@ coords <- tribble(
   "Ger",   -4.937717, 50.198667,
   "Hel",   -5.100000, 50.097694, # adjusted lon to get value
   "Man",   -5.060200, 50.039417,
-  "Her",   -4.900000, 50.200000, # adjusted lon to get value
+  "Nar",   -4.900000, 50.200000, # adjusted lon to get value
   "AusI",  -4.729850, 50.319417,
   "AusII", -4.727850, 50.327283,	
   "Gri",   -4.600000, 50.319150, # adjusted lon to get value
@@ -118,5 +118,5 @@ psych::pairs.panels(baseline_datasets_noCor, scale = TRUE)
 climate_df_noCor <- dplyr::select(climate_df, !contains(remove_vars))
 
 # Export data as CSV file
-write.csv(climate_df_noCor, file = "./outputs/climate_data.csv", row.names = FALSE)
+write.csv(climate_df_noCor, file = "outputs/climate_data.csv", row.names = FALSE)
 

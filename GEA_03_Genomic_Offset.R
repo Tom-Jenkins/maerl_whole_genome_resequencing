@@ -1,17 +1,17 @@
 # =========================== #
 #
-# Maerl Whole Genome Resequencing Project 2024
+# Maerl Whole Genome Re-sequencing Project 2024
 #
-# LFMM and RDA: Outlier SNP Detection
+# Genomic Offset
 #
 # Species:
 # Phymatolithon calcareum
-# Lithothamnion corallioides
 #
 # =========================== #
 
 # In RStudio set working directory to the path where this R script is located
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+set.seed(123)
 
 # Load packages
 library(data.table)
@@ -29,6 +29,9 @@ library(rnaturalearthhires)
 library(sf)
 library(ggsflabel)
 library(patchwork)
+library(randomcoloR)
+library(scales)
+library(hierfstat)
 
 # Read in genotypes in LFMM format
 geno_outlier <- data.table::fread("outputs/pcalcareum_GEA_outlier_loci.lfmm")
@@ -39,46 +42,102 @@ env_data$site <- str_sub(env_data$site, 1, 3)
 env_data
 
 # Convert to individual format
-vcf <- read.vcfR("./outputs/pcalcareum_GEA_outlier_loci.vcf.gz")
+vcf <- read.vcfR("outputs/pcalcareum_GEA_outlier_loci.vcf.gz")
 geno_ind <- tibble(ind = colnames(vcf@gt)[-1], geno_outlier)
-geno_ind$site <- str_sub(geno_ind$ind, 1, 3)
+geno_ind$site <- str_sub(geno_ind$ind, 1, 3) 
+geno_ind <- dplyr::select(geno_ind, ind, site, everything())
 head(geno_ind)
+
+# Calculate heterozygosity for outlier loci
+GEA_genind <- vcfR2genind(vcf)
+GEA_genind$pop <- as.factor(str_sub(indNames(GEA_genind), 1, 3))
+GEA_basic_stats <- basic.stats(GEA_genind)
+GEA_basic_stats$Ho |> apply(X = _, MARGIN = 2, FUN = mean, na.rm=TRUE) |> round(2)
 
 # Join data
 env_data_ind <- left_join(dplyr::select(geno_ind, ind, site), distinct(env_data, site, .keep_all = T), by = "site")
 env_data_ind
 
+# Combine St Austell sites
+geno_ind$site <- str_replace_all(geno_ind$site, "Gri", "Aus")
+env_data_ind$site <- str_replace_all(env_data_ind$site, "Gri", "Aus")
+
 # Baseline environmental data
-baseline <- select(env_data_ind, contains(c("tao_baseline","so_baseline","ph_baseline")))
+baseline <- select(env_data_ind, contains(c("tao_baseline","so_baseline")))
 
 # SSP119 'Sustainability'
-ssp119 <- select(env_data_ind, contains(c("tao_ssp119","so_ssp119","ph_ssp119")))
+ssp119 <- select(env_data_ind, contains(c("tao_ssp119","so_ssp119")))
 
 # SSP245 'Middle of the Road'
-ssp245 <- select(env_data_ind, contains(c("tao_ssp245","so_ssp245","ph_ssp245")))
+ssp245 <- select(env_data_ind, contains(c("tao_ssp245","so_ssp245")))
 
 # SSP585 'Fossil-Fueled'
-ssp585 <- select(env_data_ind, contains(c("tao_ssp585","so_ssp585","ph_ssp585")))
+ssp585 <- select(env_data_ind, contains(c("tao_ssp585","so_ssp585")))
 
-# Genetic offset SSP119
-offset119 <- genetic.offset(geno_outlier, env = baseline, pred.env = ssp119, K = 9, scale = TRUE)
-sort(set_names(round(offset119$offset, digit = 2), env_data_ind$ind))
+# View stats
+# View(select(env_data_ind, site, thetao_baseline_2000_2019_depthmean, so_baseline_2000_2019_depthmean))
+
+# ----------------- #
+# Genomic offsets ####
+# ----------------- #
 
 # Genetic offset SSP245
 offset245 <- genetic.offset(geno_outlier, env = baseline, pred.env = ssp245, K = 9, scale = TRUE)
 sort(set_names(round(offset245$offset, digit = 2), env_data_ind$ind))
+
+# Genetic offset SSP119
+offset119 <- genetic.offset(geno_outlier, env = baseline, pred.env = ssp119, K = 9, scale = TRUE)
+sort(set_names(round(offset119$offset, digit = 2), env_data_ind$ind))
 
 # Genetic offset SSP585
 offset585 <- genetic.offset(geno_outlier, env = baseline, pred.env = ssp585, K = 9, scale = TRUE)
 sort(set_names(round(offset585$offset, digit = 2), env_data_ind$ind))
 
 
+# ----------------- #
+# Spatial autocorrelation ####
+# ----------------- #
+
+# Calculate least-cost geographic distances between sites
+coords <- read.csv("data/site_coordinates.csv")
+coords <- env_data_ind |> 
+  left_join(coords, by = c("site" = "Site")) |> 
+  select(site, Longitude, Latitude)
+library(marmap)
+# bathydata = getNOAA.bathy(lon1 = -15, lon2 = 30, lat1 = 35, lat2 = 65, resolution = 2)
+# trans1 <- trans.mat(bathydata, min.depth = -1)
+# save(trans1, file = "outputs/transition_object.RData")
+load("outputs/transition_object.RData")
+lc_dist = lc.dist(trans1, coords[,2:3], res = "dist")
+
+# Compute dbMEMs using adespatial
+library(adespatial)
+dbmems <- dbmem(lc_dist, MEM.autocor = "positive")
+
+# Function to control for spatial autocorrelation by detrending environmental variables prior to modelling
+detrend_variables <- function (df) {
+  temp_regress_data <- cbind(temperature = df[[1]], dbmems)
+  sal_regress_data <- cbind(salinity = df[[2]], dbmems)
+  # ph_regress_data <- cbind(ph = df[[3]], dbmems)
+  temp_residuals <- residuals(lm(temperature ~ ., data = temp_regress_data))
+  sal_residuals <- residuals(lm(salinity ~ ., data = sal_regress_data))
+  # ph_residuals <- residuals(lm(ph ~ ., data = ph_regress_data))
+  new_data <- data.frame(Temperature = temp_residuals, Salinity = sal_residuals)
+  return(new_data)
+}
+
+# Replace baseline values with residuals (controlling for spatial autocorrelation)
+baseline_detrend <- detrend_variables(baseline) |> select(Temperature, Salinity)
+
+# Replace ssp245 with residuals
+# ssp245_detrend <- detrend_variables(ssp245)
+
 #--------------#
-# Figure 7A ####
+# Figure 6A ####
 #--------------#
 
 # Run RDA with only outlier loci
-rda_outlier <- rda(geno_outlier ~ ., data = baseline, scale = T)
+rda_outlier <- rda(geno_outlier ~ ., data = baseline_detrend, scale = T)
 
 # Total variance explained
 RsquareAdj(rda_outlier)
@@ -91,23 +150,23 @@ plot_df <- tibble(
   ind = geno_ind$ind,
   site = geno_ind$site
 )
-plot_df <- cbind(plot_df, baseline)
+plot_df <- cbind(plot_df, env_data_ind)
 
 # Change MawC samples from Maw to MawC
 plot_df$site[which(str_detect(plot_df$ind, "Maw11C|Maw22C"))] <- "MawC"
 
 # Change site to factor
-site_new_order <- c("Zar","Man","Biz","Aus","Gri","Ger","Her","Maw",
+site_new_order <- c("Zar","Man","Biz","Aus","Ger","Nar","Maw",
                     "MawC","Swa","Wey","Mor","Tre","Bor","Ons")
 plot_df$site <- factor(plot_df$site, levels = site_new_order)
 
 # Vector of colours
-library(scales)
-sample_cols <- c(Aus = "grey60", Biz = "#FF69B4", Bor = "#E17E68",
-                 Ger = "#FCCDE5", Gri = "#FAA0A0", Her = "#D9D9D9",
+sample_cols <- c(Aus = "#FAA0A0", Biz = "#FF69B4", Bor = "#E17E68",
+                 Ger = "#FCCDE5", Nar = "#D9D9D9",
                  Man = "#F3CFC6", Maw = "#FF00FF", MawC = "#FDB462",
                  Mor = "#BEBADA", Ons = "#FFFFB3", Swa = "grey60", 
                  Tre = "#8DD3C7", Wey = "#B3DE69", Zar = "#80B1D3")
+# sample_cols <- distinctColorPalette(n_distinct(plot_df$site), runTsne = FALSE)
 scales::show_col(sample_cols)
 
 # Order colours
@@ -147,7 +206,8 @@ rda_pcal <- ggplot(data = sites_scores, aes(x = RDA1, y = RDA2, fill = location)
   annotate("segment", x = 0, xend = arrow3$xend, y = 0, yend = arrow3$yend-0.2,
            arrow = arrow(length = unit(0.15, "inches")), colour = "black", linewidth = 0.5)+
   annotate("text", x = arrow3$xend, y = arrow3$yend-0.30, label = "pH", col = "black", size = 5)+
-  scale_fill_manual(name = "Location", values = sample_cols)+
+  scale_fill_manual(
+    name = "Location", values = sample_cols)+
   # scale_x_continuous(limits = c(-2.5,1.5))+
   scale_y_continuous(position = "right")+
   # Sample points
@@ -174,7 +234,7 @@ rda_pcal
 
 
 #--------------#
-# Figure 7B ####
+# Figure 6B ####
 #--------------#
 
 # Temperature change
@@ -182,7 +242,7 @@ env_data_ind |>
   select(site, contains(c("tao_")) & contains(c("baseline","ssp245"))) |> 
   mutate(temp_change = thetao_ssp245_2020_2100_depthmean - thetao_baseline_2000_2019_depthmean) |> 
   distinct() |> 
-  pull(thetao_baseline_2000_2019_depthmean) |> range()
+  pull(temp_change) |> range()
 
 # Salinity change
 env_data_ind |> 
@@ -224,7 +284,8 @@ offset_sf <- offset_df |>
     offset245_mean = mean(offset245),
     offset585_mean = mean(offset585)
   ) |> 
-  st_as_sf(coords = c("lon","lat"), crs = 4326)
+  st_as_sf(coords = c("lon","lat"), crs = 4326) |> 
+  distinct(site, .keep_all = TRUE)
 offset_sf
 
 # Theme
@@ -234,7 +295,7 @@ gg_theme <- theme(
   panel.grid.major = element_line(colour = "#f0f0f0"),
   plot.title = element_text(size = 12, hjust = 0.5),
   axis.title = element_text(size = 11),
-  legend.title = element_text(size = 14),
+  legend.title = element_text(size = 14, margin = margin(b = 15)),
   legend.text = element_text(size = 10),
   legend.position = "right",
 )
@@ -245,9 +306,9 @@ labels_df <- tribble(
   "Zar", 54.50, -4.50,
   "Wey", 51.20, -1.30,
   "Biz", 50.09, -4.00,
-  "Gri", 50.50, -6.50,
+  "Aus", 50.50, -6.50,
   "Ger", 50.50, -7.50,
-  "Her", 50.09, -6.50,
+  "Nar", 50.09, -6.50,
   "Maw", 50.09, -7.50,
   "Man", 50.09, -8.50,
   "Mor", 49.00, -6.50,
@@ -264,13 +325,13 @@ text_colour <- c("white","white","black","black","black","black","black","black"
 offset_sf_join <- left_join(offset_sf, labels_df, by = "site")
 
 # Remove sites which have low sample sizes < 3 (Aus and Swa)
-offset_sf_join <- filter(offset_sf_join, site != "Aus", site != "Swa")
+offset_sf_join <- filter(offset_sf_join, site != "Swa")
 
 # Plot Biz on top of Cornwall sites
 Biz <- filter(offset_sf_join, site == "Biz")
 
 # Map
-Fig7B <- ggplot()+
+Fig6B <- ggplot()+
   geom_sf(data = basemap)+
   geom_sf(data = offset_sf_join, aes(fill = offset245_mean), size = 2.5, shape = 24, colour = "black", stroke = 0.5)+
   geom_sf(data = Biz, aes(fill = offset245_mean), size = 2.5, shape = 24, colour = "black", stroke = 0.5)+
@@ -283,12 +344,14 @@ Fig7B <- ggplot()+
   geom_sf_label_repel(
     data = offset_sf_join, aes(label = site, fill = offset245_mean),
     show.legend = FALSE, point.size = 3, max.overlaps = 20,
-    min.segment.length = 0, force = 5, size = 4, label.padding = unit(0.08, "cm")
+    min.segment.length = 0, force = 3, size = 4, label.padding = unit(0.08, "cm")
   )+
   coord_sf(xlim = c(boundary["xmin"], boundary["xmax"]), ylim = c(boundary["ymin"], boundary["ymax"]))+
   scale_fill_gradient2(
     name = "Offset", low = "#878787", mid = "#fddbc7", high = "red",
-    midpoint = median(offset_sf_join$offset245_mean)
+    midpoint = mean(offset_sf_join$offset245_mean),
+    breaks = c(0.02,0.03,0.04)
+    # midpoint = 0.03
   )+
   # scale_fill_viridis_c(option = "turbo")+
   # scale_fill_distiller(name = "Offset", palette = "RdGy")+
@@ -296,17 +359,17 @@ Fig7B <- ggplot()+
   ylab("Latitude")+
   ggtitle("Genomic Offset – 2050 SSP245")+
   gg_theme
-# Fig7B
+Fig6B
 
 #--------------#
 # Figure: Composer ####
 #--------------#
 
 # Layout design
-plt_list = list(rda_pcal, Fig7B)
+plt_list = list(rda_pcal, Fig6B)
 fig <- wrap_plots(plt_list, ncol = 2)+ plot_annotation(tag_levels = "A")
-# fig
+fig
 
 # Export figure
-ggsave(plot = fig, filename = "Figure_07.png", width = 12, height = 7, units = "in", dpi = 600)
-ggsave(plot = fig, filename = "Figure_07.pdf", width = 12, height = 7, units = "in")
+ggsave(plot = fig, filename = "figures/Figure_06.png", width = 12, height = 7, units = "in", dpi = 600)
+ggsave(plot = fig, filename = "figures/Figure_06.pdf", width = 12, height = 7, units = "in")
