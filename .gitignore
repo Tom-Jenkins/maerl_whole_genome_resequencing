@@ -1,3 +1,5 @@
 .Rhistory
 .RData
 data/SNP_variants/*
+pcalcareum_SNPs.pcaProject
+lcorallioides_SNPs.pcaProject

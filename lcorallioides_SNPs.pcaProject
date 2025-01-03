@@ -1,6 +1,0 @@
-new("pcaProject", projDir = "C:/Users/tj311/OneDrive - University of Exeter/Maerl WGS/Manuscript/maerl_whole_genome_resequencing/outputs/", 
-    pcaDir = "lcorallioides_SNPs.pca/", n = 66L, L = 10215L, 
-    K = 66L, center = TRUE, scale = TRUE, pcaProject.file = "lcorallioides_SNPs.pcaProject", 
-    input.file = "lcorallioides_SNPs.lfmm", eigenvalue.file = "lcorallioides_SNPs.eigenvalues", 
-    eigenvector.file = "lcorallioides_SNPs.eigenvectors", sdev.file = "lcorallioides_SNPs.sdev", 
-    projection.file = "lcorallioides_SNPs.projections")
