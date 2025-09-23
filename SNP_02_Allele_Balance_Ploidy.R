@@ -1,14 +1,14 @@
-# =========================== #
+# ========== #
 #
-# Maerl Whole Genome Re-sequencing Project 2024
+# Maerl WGS Analysis 2025
 #
-# SNP Variant QC and Ploidy Analysis
+# SNP Ploidy Analysis
 #
 # Species:
 # Phymatolithon calcareum
 # Lithothamnion corallioides
 #
-# =========================== #
+# ========== #
 
 # In RStudio set working directory to the path where this R script is located
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -20,9 +20,9 @@ library(adegenet)
 library(stringr)
 library(ggplot2)
 
-# ----------------- #
+# ---------- #
 # Allele Balance Function
-# ----------------- #
+# ---------- #
 
 plot_allele_balance <- function(ad_matrix, sample, depth_threshold, col = "lightblue", bins = 0.01) {
   
@@ -60,21 +60,21 @@ plot_allele_balance <- function(ad_matrix, sample, depth_threshold, col = "light
       labels = c("0","1/3","1/2","2/3","1")
     )+
     ylab("Frequency\n")+
-    ggtitle(sample)+
+    xlab("\nAllele balance")+
+    ggtitle(ifelse(sample == "Nar_06", "Ger_06", sample))+
     theme(
       panel.background = element_rect(fill = "white"),
       panel.grid.major.x = element_blank(),
       panel.grid.minor.x = element_blank(),
       panel.grid.major.y = element_line(colour = "grey90"),
-      axis.title.x = element_blank(),
+      # axis.title.x = element_blank(),
     )
   return(plt)
 }
 
-
-# ----------------- #
+# ---------- #
 # Phymatolithon calcareum ####
-# ----------------- #
+# ---------- #
 
 # Read in VCF file
 vcf_pcal <- read.vcfR("./outputs/pcalcareum_SNPs.vcf.gz")
@@ -123,10 +123,9 @@ dp_pcal[, target_sample_pcal] |> summary()
 # length(triploid_dp_pass)
 # triploid_ld_dp <- triploid_ld[triploid_dp_pass, ]
 
-
-# ----------------- #
+# ---------- #
 # Lithothamnion corallioides ####
-# ----------------- #
+# ---------- #
 
 # Read in VCF file
 vcf_lcor <- read.vcfR("./outputs/lcorallioides_SNPs.vcf.gz")
@@ -163,10 +162,9 @@ plot_allele_balance(ad_lcor, "Tud_02", depth_threshold)
 plot_allele_balance(ad_lcor, "Maw15_P2", depth_threshold)
 plot_allele_balance(ad_lcor, "Hel_57", depth_threshold)
 
-
-# ----------------- #
+# ---------- #
 # Figure 2 ####
-# ----------------- #
+# ---------- #
 
 # Custom ggplot2 theme
 custom_theme <- theme(
@@ -174,7 +172,7 @@ custom_theme <- theme(
   panel.grid.major.x = element_blank(),
   panel.grid.minor.x = element_blank(),
   panel.grid.major.y = element_line(colour = "grey90"),
-  axis.title.x = element_blank(),
+  # axis.title.x = element_blank(),
 )
 
 # Parameters
@@ -193,6 +191,7 @@ diploid_plt <- ggplot(diploid_df, aes(x = value)) +
     labels = c("0","1/3","1/2","2/3","1")
   )+
   ylab("Frequency\n")+
+  xlab("\nAllele balance")+
   ggtitle("Diploid")+
   custom_theme
 diploid_plt
@@ -207,6 +206,7 @@ triploid_plt <- ggplot(triploid_df, aes(x = value)) +
     labels = c("0","1/3","1/2","2/3","1")
   )+
   ylab("Frequency\n")+
+  xlab("\nAllele balance")+
   ggtitle("Triploid")+
   custom_theme
 triploid_plt
@@ -224,9 +224,9 @@ triploid_plt
 (Maw22C_14 <- plot_allele_balance(ad_pcal, "Maw22C_14", depth_threshold, col_triploid))
 (Maw22C_12 <- plot_allele_balance(ad_pcal, "Maw22C_12", depth_threshold, col_triploid))
 
-#--------------#
+# ---------- #
 # Figure: Composer ####
-#--------------#
+# ---------- #
 
 # Load patchwork
 library(patchwork)
@@ -243,7 +243,7 @@ plt_list <- list(
   Maw22C_06+ ggtitle("Maw22C_06 (Coarse)")+ theme(axis.title.y = element_blank()),
   Maw22C_14+ ggtitle("Maw22C_14 (Coarse)")+ theme(axis.title.y = element_blank())
 )
-wrap_plots(plt_list, nrow = 2)
+wrap_plots(plt_list, nrow = 2)+plot_layout(axis_titles = "collect")
 # + plot_annotation(tag_levels = "A")
-ggsave("figures/Figure_02.png", width = 12, height = 8, units = "in", dpi = 900)
+ggsave("figures/Figure_02.png", width = 12, height = 8, units = "in", dpi = 600)
 ggsave("figures/Figure_02.pdf", width = 12, height = 8, units = "in")

@@ -1,14 +1,13 @@
-# =========================== #
+# ========== #
 #
-# Maerl Whole Genome Re-sequencing Project 2024
+# Maerl WGS Analysis 2025
 #
 # Extract Climate Data for GEA Analysis
 #
-# Species:
 # Phymatolithon calcareum
 # Lithothamnion corallioides
 #
-# =========================== #
+# ========== #
 
 # In RStudio set working directory to the path where this R script is located
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -29,13 +28,14 @@ netcdf2tifcrop <- function(netcdf, outpath) {
 }
 
 # Run function on all *.nc files
-# nc_files <- list.files("../Environmental Raw NC/", pattern = ".nc", full.names = TRUE)
-# lapply(nc_files, netcdf2tifcrop)
+runConversion <- FALSE
+if (runConversion) {
+  nc_files <- list.files("../BioOracle_NetCDFs/", pattern = ".nc", full.names = TRUE)
+  lapply(nc_files, netcdf2tifcrop)
+}
 
 # Copy *.tif files to data/ directory
-# BioOracle https://www.bio-oracle.org/index.php download parameters
-# Ocean temperature, salinity, velocity, oxygen, pH: v3.0; 2000-2010; benthic (average depth); variable mean
-# Cloud cover: 2000-2010; surface; variable mean  
+# BioOracle https://www.bio-oracle.org/index.php
 
 # Read in all tif files as rasters
 tifs <- list.files(path = "data/environmental_data/", pattern = "\\.tif$", full.names = TRUE)
@@ -55,20 +55,21 @@ plot(allRasters[[1]])
 coords <- tribble(
   ~site, ~lon, ~lat,
   "Biz",   -4.986650, 50.136483,
-  "Maw15", -5.030833, 50.155694,
-  "Maw22", -5.031100, 50.165750,
+  # "Maw15", -5.030833, 50.155694,
+  "Maw", -5.031100, 50.165750,
+  "MawC", -5.031100, 50.165750,
   "Ger",   -4.937717, 50.198667,
   "Hel",   -5.100000, 50.097694, # adjusted lon to get value
   "Man",   -5.060200, 50.039417,
-  "Nar",   -4.900000, 50.200000, # adjusted lon to get value
-  "AusI",  -4.729850, 50.319417,
-  "AusII", -4.727850, 50.327283,	
-  "Gri",   -4.600000, 50.319150, # adjusted lon to get value
+  # "Nar",   -4.900000, 50.200000, # adjusted lon to get value
+  "Aus",  -4.729850, 50.319417,
+  # "AusII", -4.727850, 50.327283,	
+  # "Gri",   -4.600000, 50.319150, # adjusted lon to get value
   "Wey",   -2.319622, 50.615993,	
   "Swa",   -1.910432, 50.649958,	
   "Mil1",  -5.130000, 51.690000, # adjusted lon/lat to get value
   "Mil2",  -5.130000, 51.690000, # adjusted lonlat to get value
-  "Tud",   -4.456283, 52.809333,
+  # "Tud",   -4.456283, 52.809333,
   "Ons",   -8.915,    42.395,
   "Bor",   -9.020,    42.789,
   "Zar",   -5.500,    54.379, # adjusted lon to get value
@@ -89,14 +90,14 @@ climate_df <- data.frame(
   terra::extract(allRasters, coords_vect, ID = FALSE)
 )
 
-# Order by temperature and convert to two decimal places
+# Order by temperature and set decimal places
 climate_df <- climate_df |> 
   arrange(thetao_baseline_2000_2019_depthmean) |> 
-  mutate(across(4:ncol(climate_df), ~ round(.x, digits = 2)))
+  mutate(across(4:ncol(climate_df), ~ round(.x, digits = 5)))
 head(climate_df)
 
 # Test multicollinearity
-baseline_datasets <- dplyr::select(climate_df, !contains("dfe") & !contains("ssp119") & !contains("ssp245") & !contains("ssp585") & !contains("site"))
+baseline_datasets <- dplyr::select(climate_df, !contains("lat") & !contains("lon") & !contains("ssp245") & !contains("site"))
 head(baseline_datasets)
 library(psych)
 psych::pairs.panels(baseline_datasets, scale = TRUE)
@@ -108,15 +109,16 @@ usdm::vif(baseline_datasets)
 # Only keep key variables that are not correlated (>0.70)
 remove_vars <- c("o2","kdpar")
 baseline_datasets_noCor <- dplyr::select(baseline_datasets, !contains(remove_vars))
-head(baseline_datasets_noCor)
-
-# Re-calculate Variance Inflation Factor
-usdm::vif(baseline_datasets_noCor)
 psych::pairs.panels(baseline_datasets_noCor, scale = TRUE)
+
+# Only keep key variables that are not correlated (>0.70)
+remove_vars <- c(remove_vars, "pH")
+baseline_datasets_noCor <- dplyr::select(baseline_datasets_noCor, !contains(remove_vars))
+psych::pairs.panels(baseline_datasets_noCor, scale = TRUE)
+usdm::vif(baseline_datasets_noCor)
 
 # Export climate data that are not correlated
 climate_df_noCor <- dplyr::select(climate_df, !contains(remove_vars))
 
 # Export data as CSV file
 write.csv(climate_df_noCor, file = "outputs/climate_data.csv", row.names = FALSE)
-

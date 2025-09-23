@@ -1,9 +1,10 @@
+# ========== #
 #
-# Maerl Whole Genome Re-sequencing Project 2024
+# Maerl WGS Analysis 2025
 #
 # Figure 1
 #
-# =========================== #
+# ========== #
 
 # In RStudio set working directory to the path where this R script is located
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -21,11 +22,12 @@ library(jpeg)
 library(grid)
 library(ggrepel)
 library(ggsflabel)
+library(ggtree)
+library(rphylopic)
 
-
-#--------------#
+# ---------- #
 # Figure 1A ####
-#--------------#
+# ---------- #
 
 # CRS
 CRS = 3035
@@ -39,6 +41,7 @@ bbox <- mapmixture::transform_bbox(c(xmin = -17, xmax = 4, ymin = 40, ymax = 58)
 
 # Read in coordinates csv as sf object
 coords <- read_csv("data/site_coordinates.csv") |>
+  dplyr::filter(!Site %in% c("Gri","Nar")) |> 
   st_as_sf(x = _, coords = c("Longitude","Latitude"), crs = 4326) |>
   st_transform(x = _, crs = CRS)
 
@@ -69,10 +72,15 @@ map1 <- ggplot()+
   geom_sf(data = basemap)+
   # geom_sf(data = coords_basemap, aes(fill = Species), size = 4, shape = 21, colour = "black")+
   geom_sf(data = coords_basemap, size = 2, colour = "black")+
-  scale_fill_manual("Species:",
-                    values = c("#f00c93","pink","#dfc5fe","grey90"),
-                    labels = expression(italic("P. calcareum"), italic("L. corallioides"), "Both", "Jenkins et al. 2021" )
-                    )+
+  scale_fill_manual(
+    values = c("#f00c93","pink","#dfc5fe","grey90"),
+    labels = c(
+      expression(italic("P. calcareum")),
+      expression(italic("L. corallioides")),
+      "Both",
+      expression(italic("P. calcareum") ~ "(Jenkins et al. 2021)")
+    )
+  )+
   annotation_north_arrow(
     data = basemap, location = "tl", which_north = "true",
     height = unit(0.6, "cm"), width = unit(0.6, "cm"),
@@ -92,17 +100,18 @@ map1 <- ggplot()+
     y = rect_bbox["ymin"]*1.01, yend = rect_bbox["ymin"]*1.01
   )+
   coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]), ylim = c(bbox["ymin"], bbox["ymax"]))+
-  xlab("Longitude")+
-  ylab("Latitude")+
+  xlab("\nLongitude")+
+  ylab("Latitude\n")+
   gg_theme+
   theme(
     legend.position = "top",
-    legend.title = element_text(size = 16),
+    # legend.title = element_text(size = 16),
+    legend.title = element_blank(),
     legend.text = element_text(size = 16),
     axis.title = element_text(size = 14),
     axis.text = element_text(size = 13),
   )+
-  guides(fill = guide_legend(override.aes = aes(label = " ", size = 5)))+
+  guides(fill = guide_legend(nrow = 2, override.aes = aes(label = " ", size = 5)))+
   # Labels
   # geom_sf_label_repel(
   #   data = coords_basemap, aes(label = Site),
@@ -112,7 +121,7 @@ map1 <- ggplot()+
     data = coords_basemap, aes(label = Site, fill = Species),
     min.segment.length = 0, force = 5, size = 5,  label.padding = unit(0.08, "cm")
   )
-# map1
+map1
 
 # Read in high resolution England coastline geopackage
 england <- st_read("data/england_ol_2001.gpkg")
@@ -170,9 +179,9 @@ Fig1A <- map1+ inset_element(
 )
 # Fig1A
 
-#--------------#
+# ---------- #
 # Figure 1B ####
-#--------------#
+# ---------- #
 
 # Read in jpeg and convert to ggplot object
 maerl_jpeg <- readJPEG("figures/maerl_Matt_Slater_Cornwall_Wildlife_Trust_2021_compressed.JPG") |>
@@ -184,13 +193,9 @@ Fig1B <- ggplot()+
   theme_void()
 # Fig1B
 
-#--------------#
+# ---------- #
 # Figure 1C ####
-#--------------#
-
-# Load ggtree
-library(ggtree)
-library(rphylopic)
+# ---------- #
 
 # Read in species tree
 tree <- read.tree("data/astral_results/busco_genes_ASTRAL_spp.tree")
@@ -213,8 +218,8 @@ tree$tip.label[12] <- expression(paste(italic("Porolithon onkodes"), phantom()^"
 tree$tip.label[13] <- expression(paste(italic("Amphiroa fragilissima"), phantom()^"DNA"))
 tree$tip.label[14] <- expression(paste(italic("Lithophyllum insipidum"), phantom()^"RNA"))
 tree$tip.label[15] <- expression(paste(italic("Lithothamnion proliferum"), phantom()^"RNA"))
-tree$tip.label[16] <- expression(paste(italic(bold("Lithothamnion corallioides")), phantom()^"DNA"))
-tree$tip.label[17] <- expression(paste(italic(bold("Phymatolithon calcareum")), phantom()^"DNA"))
+tree$tip.label[16] <- expression(paste(bolditalic("Lithothamnion corallioides"), phantom()^"DNA"))
+tree$tip.label[17] <- expression(paste(bolditalic("Phymatolithon calcareum"), phantom()^"DNA"))
 
 # Build a ggplot with a geom_tree
 plt_tree <- ggtree(tree)+
@@ -228,17 +233,14 @@ plt_tree <- ggtree(tree)+
   # Bangiophyceae
   geom_cladelabel(node = 1, label = "", color = "red3", offset = 2.5, align = T, extend = 0.35, barsize = 1.5, offset.text = -1.5, fontsize = 4.5)+
   # Phylopics
-  add_phylopic(uuid = "795cf765-7b4a-47a3-8bc3-4c4120fe2393", ysize = 0.8, x = 7.9, y = 7.2, alpha = 0.25)+
-  add_phylopic(uuid = "7721d472-7b68-411a-baeb-cab565e4bf89", ysize = 0.8, x = 4.5, y = 4, alpha = 0.25)+
-  add_phylopic(uuid = "bdb624c7-049d-45b6-ae41-b1b74186dc69", ysize = 0.8, x = 2.7, y = 1, alpha = 0.25)
+  add_phylopic(uuid = "795cf765-7b4a-47a3-8bc3-4c4120fe2393", height = 0.8, x = 7.9, y = 7.2, alpha = 0.25)+
+  add_phylopic(uuid = "7721d472-7b68-411a-baeb-cab565e4bf89", height = 0.8, x = 4.5, y = 4, alpha = 0.25)+
+  add_phylopic(uuid = "bdb624c7-049d-45b6-ae41-b1b74186dc69", height = 0.8, x = 2.7, y = 1, alpha = 0.25)
 plt_tree
 
-#--------------#
+# ---------- #
 # Figure: Composer ####
-#--------------#
-
-# Load patchwork
-library(patchwork)
+# ---------- #
 
 # Layout design
 layout <- "

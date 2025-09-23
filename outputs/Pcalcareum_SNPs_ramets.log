@@ -1,0 +1,34 @@
+PLINK v1.9.0-b.7.11 64-bit (19 Aug 2025)
+Options in effect:
+  --a1-allele C:\Users\tj311\AppData\Local\Temp\Rtmp2L0Asb/mylist.txt
+  --allow-extra-chr
+  --allow-no-sex
+  --file outputs//gl_plink_temp
+  --out outputs//Pcalcareum_SNPs_ramets
+  --recode vcf
+
+Hostname: 5CG12251WR
+Working directory: c:\Users\tj311\GitHub\maerl_whole_genome_resequencing
+Start time: Mon Sep 15 11:07:15 2025
+
+Random number seed: 1757930835
+32532 MB RAM detected; reserving 16266 MB for main workspace.
+Scanning .ped file... done.
+Performing single-pass .bed write (15328 variants, 87 people).
+--file: outputs//Pcalcareum_SNPs_ramets-temporary.bed +
+outputs//Pcalcareum_SNPs_ramets-temporary.bim +
+outputs//Pcalcareum_SNPs_ramets-temporary.fam written.
+15328 variants loaded from .bim file.
+87 people (0 males, 0 females, 87 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to outputs//Pcalcareum_SNPs_ramets.nosex .
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 87 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is exactly 1.
+--a1-allele: 15328 assignments made.
+15328 variants and 87 people pass filters and QC.
+Note: No phenotypes present.
+Warning: Underscore(s) present in sample IDs.
+--recode vcf to outputs//Pcalcareum_SNPs_ramets.vcf ... done.
+
+End time: Mon Sep 15 11:07:15 2025

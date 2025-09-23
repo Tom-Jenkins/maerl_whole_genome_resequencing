@@ -1,6 +1,6 @@
-# =========================== #
+# ========== #
 #
-# Maerl Whole Genome Re-sequencing Project 2024
+# Maerl WGS Analysis 2025
 #
 # SNP QC and Filtering Analysis
 #
@@ -8,7 +8,7 @@
 # Phymatolithon calcareum
 # Lithothamnion corallioides
 #
-# =========================== #
+# ========== #
 
 # In RStudio set working directory to the path where this R script is located
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -17,13 +17,14 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 library(vcfR)
 library(SNPfiltR)
 library(stringr)
+library(dartR)
 
-# ----------------- #
+# ---------- #
 # Phymatolithon calcareum ####
-# ----------------- #
+# ---------- #
 
 # Read in VCF file
-vcf <- read.vcfR("./data/SNP_variants/pcalcareum_variants_qc3.vcf")
+vcf <- read.vcfR("data/SNP_variants/pcalcareum_variants_qc3.vcf.gz")
 
 # Filter SNPs for linkage
 vcf_ld <- distance_thin(vcf, min.distance = 1000)
@@ -63,14 +64,17 @@ colnames(vcf_ld_bi_dp_poly@gt) <- str_replace(colnames(vcf_ld_bi_dp_poly@gt), "H
 colnames(vcf_ld_bi_dp_poly@gt)
 
 # Export filtered genotypes for Phymatolithon calcareum
-vcfR::write.vcf(vcf_ld_bi_dp_poly, file = "./outputs/pcalcareum_SNPs.vcf.gz")
+vcfR::write.vcf(vcf_ld_bi_dp_poly, file = "outputs/Pcalcareum_SNPs.vcf.gz")
 
-# ----------------- #
+# Export filtered genotypes as .geno and .lfmm file
+# vcf_ld_bi_dp_poly |> vcfR2genlight() |> gl2geno(outfile = "pcalcareum_SNPs", outpath = "outputs/")
+
+# ---------- #
 # Lithothamnion corallioides ####
-# ----------------- #
+# ---------- #
 
 # Read in VCF file
-vcf <- read.vcfR("./data/SNP_variants/lcorallioides_variants_qc3.vcf")
+vcf <- read.vcfR("data/SNP_variants/lcorallioides_variants_qc3.vcf.gz")
 
 # Filter SNPs for linkage
 vcf_ld <- distance_thin(vcf, min.distance = 1000)
@@ -105,4 +109,7 @@ vcf_ld_bi_dp_poly <- vcf_ld_bi_dp[which(is.polymorphic(vcf_ld_bi_dp)),]
 # scatter_plot(as.data.frame(pca_pcal$scores), type = "labels", group_ids = indNames(pca_geno), size = 3)+theme(legend.position="none")
 
 # Export filtered genotypes for Lithothamnion corallioides
-vcfR::write.vcf(vcf_ld_bi_dp_poly, file = "./outputs/lcorallioides_SNPs.vcf.gz")
+vcfR::write.vcf(vcf_ld_bi_dp_poly, file = "outputs/Lcorallioides_SNPs.vcf.gz")
+
+# Export filtered genotypes as .geno and .lfmm file
+# vcf_ld_bi_dp_poly |> vcfR2genlight() |> gl2geno(outfile = "lcorallioides_SNPs", outpath = "outputs/")

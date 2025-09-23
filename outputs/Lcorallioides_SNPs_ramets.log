@@ -1,0 +1,34 @@
+PLINK v1.9.0-b.7.11 64-bit (19 Aug 2025)
+Options in effect:
+  --a1-allele C:\Users\tj311\AppData\Local\Temp\RtmpEjE935/mylist.txt
+  --allow-extra-chr
+  --allow-no-sex
+  --file outputs//gl_plink_temp
+  --out outputs//Lcorallioides_SNPs_ramets
+  --recode vcf
+
+Hostname: 5CG12251WR
+Working directory: c:\Users\tj311\GitHub\maerl_whole_genome_resequencing
+Start time: Mon Sep 15 11:06:52 2025
+
+Random number seed: 1757930812
+32532 MB RAM detected; reserving 16266 MB for main workspace.
+Scanning .ped file... done.
+Performing single-pass .bed write (10215 variants, 66 people).
+--file: outputs//Lcorallioides_SNPs_ramets-temporary.bed +
+outputs//Lcorallioides_SNPs_ramets-temporary.bim +
+outputs//Lcorallioides_SNPs_ramets-temporary.fam written.
+10215 variants loaded from .bim file.
+66 people (0 males, 0 females, 66 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to outputs//Lcorallioides_SNPs_ramets.nosex .
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 66 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is exactly 1.
+--a1-allele: 10215 assignments made.
+10215 variants and 66 people pass filters and QC.
+Note: No phenotypes present.
+Warning: Underscore(s) present in sample IDs.
+--recode vcf to outputs//Lcorallioides_SNPs_ramets.vcf ... done.
+
+End time: Mon Sep 15 11:06:52 2025

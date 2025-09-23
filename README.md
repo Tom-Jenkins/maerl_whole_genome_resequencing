@@ -1,4 +1,4 @@
-# Population genomics, polyploidy, climate resilience and the microbiota of two habitat-building coralline algae
+# Using population genomics to inform conservation of habitat-building coralline algae under climate change
 
 This repository contains the code and supporting data used in this study.
 
